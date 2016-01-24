@@ -1,25 +1,15 @@
----
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
----
+# Reproducible Research: Peer Assessment 1
 
 
 ## Loading and preprocessing the data
-### 1. Unzip the file
+### 1. Unzip the file & load the unzipped file
 
 ```r
-unzip('./activity.zip', exdir = '.')
-```
-
-### 2. Load the unzipped file
-
-```r
+unzip('./repdata-data-activity.zip', exdir = '.')
 data <- read.csv('./activity.csv', na.strings = 'NA', stringsAsFactors = FALSE)
 ```
 
-### 3. Data format conversion
+### 2. Data format conversion
 
 ```r
 data$date <- as.Date(data$date, '%Y-%m-%d')
@@ -32,38 +22,28 @@ Calculate the sum of the steps per day as follows (consider NAs as 0):
 
 
 ```r
-sumPerDay <- aggregate(data$steps ~ data$date,FUN = sum)
-colnames(sumPerDay)[2] <- 'sum'
+sumPerDay <- aggregate(data$steps ~ data$date, FUN = sum)
+colnames(sumPerDay)[2] <- 'steps'
 ```
 
 
 ```r
-hist(sumPerDay$sum, main = 'Total number of steps taken each day', xlab = 'sum(Steps)')
+library(lattice)
+histogram(sumPerDay$steps, main = 'Total number of steps taken each day', xlab = 'Sum(steps)')
 ```
 
-![plot of chunk unnamed-chunk-5](figure/unnamed-chunk-5-1.png) 
+![](PA1_template_files/figure-html/unnamed-chunk-4-1.png) 
 
 ### 2. Mean and median total number of steps taken per day
 
 
 ```r
-meanOfSums <- mean(sumPerDay$sum)
-meanOfSums
+meanSumPerDay <- mean(sumPerDay$steps)
+medianSumPerDay <- median(sumPerDay$steps)
 ```
 
-```
-## [1] 10766.19
-```
-
-
-```r
-medianOfSums <- median(sumPerDay$sum)
-medianOfSums
-```
-
-```
-## [1] 10765
-```
+The mean number of steps per day is: 1.0766189\times 10^{4}  
+The median number of steps per day is: 10765
 
 ## What is the average daily activity pattern?
 
@@ -71,27 +51,28 @@ medianOfSums
 
 
 ```r
-meanPerInterval <- aggregate(data$steps ~ data$interval, FUN = mean)
-plot(meanPerInterval, type = 'l', main = '5-min interval vs Average number of steps by interval', xlab = 'Intervals', ylab = 'Average number of steps', col = 'blue')
+meanPerInterval <- aggregate(data$steps ~ data$interval, FUN = mean, na.rm = T)
+colnames(meanPerInterval) <- c('interval', 'steps')
+xyplot(meanPerInterval$steps ~ meanPerInterval$interval, type='l', main = '5-min interval vs Average number of steps by interval', xlab = 'Interval', ylab = 'Average number of steps')
 ```
 
-![plot of chunk unnamed-chunk-7](figure/unnamed-chunk-7-1.png) 
+![](PA1_template_files/figure-html/unnamed-chunk-6-1.png) 
 
 ### 2. Interval, on average across all the days in the dataset, which contains the maximum number of steps
 
 
 ```r
-names(meanPerInterval) <- c('interval', 'steps')
 sortedMeanPerInterval <- meanPerInterval[order(meanPerInterval$steps, decreasing = 'TRUE'),]
-intervalMaxSteps <- sortedMeanPerInterval[1, 1]
+intervalMaxSteps <- sortedMeanPerInterval[1,]
 intervalMaxSteps
 ```
 
 ```
-## [1] 835
+##     interval    steps
+## 104      835 206.1698
 ```
 
-Interval 835, on average across all the days in the dataset, contains the maximum number of steps.
+Interval 835, on average across all the days in the dataset, contains the maximum number of steps 206.1698113.
 
 ## Imputing missing values
 
@@ -103,7 +84,7 @@ missingSteps <- sum(is.na(data$steps))
 ```
 
 ### 2. Devise a strategy for filling in all of the missing values in the dataset.
-Fill in with average, across other dates, for that interval
+Fill in with average, across other dates, for that interval (the same interval)
 
 ### 3. Create a new dataset that is equal to the original dataset but with the missing data filled in.
 
@@ -125,10 +106,10 @@ dataNoNA$steps <- mapply(function(x, y) {
 ```r
 sumPerDayNoNA <- aggregate(dataNoNA$steps ~ dataNoNA$date, FUN = sum)
 colnames(sumPerDayNoNA)[2] <- 'sum'
-hist(sumPerDayNoNA$sum, main = 'Total number of steps taken each day', xlab = 'Sum(steps)')
+histogram(sumPerDayNoNA$sum, main = 'Total number of steps taken each day', xlab = 'Sum(steps)')
 ```
 
-![plot of chunk unnamed-chunk-11](figure/unnamed-chunk-11-1.png) 
+![](PA1_template_files/figure-html/unnamed-chunk-10-1.png) 
 
 ### 4.2 Do these values differ from the estimates from the first part of the assignment?
 Based on this strategy, there is not much change to the distribution because the NA's were filled with averaged values.
@@ -142,9 +123,9 @@ Impact of inputing missing data is minimal in this case. Non-valid records have 
 
 
 ```r
-col <- c('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 
+cols <- c('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 
   'Friday', 'Saturday')[as.POSIXlt(dataNoNA$date)$wday + 1]
-tempData <- cbind(dataNoNA, col)
+tempData <- cbind(dataNoNA, cols)
 colnames(tempData)[4] <- 'weekday'
 
 daytype <- as.factor(tempData$weekday %in% c('Sunday', 'Saturday'))
@@ -159,8 +140,7 @@ dataNoNA <- cbind(dataNoNA, daytype)
 ```r
 meanPerIntervalDateType <- aggregate(dataNoNA$steps ~ dataNoNA$interval * dataNoNA$daytype, FUN = mean)
 colnames(meanPerIntervalDateType) <- c('interval', 'daytype', 'steps')
-library(lattice)
-xyplot(steps ~ interval|daytype, data = meanPerIntervalDateType, layout = c(1, 2), type = 'l')
+xyplot(steps ~ interval|daytype, data = meanPerIntervalDateType, layout = c(1, 2), type = 'l', xlab = 'Interval', ylab = 'Steps')
 ```
 
-![plot of chunk unnamed-chunk-13](figure/unnamed-chunk-13-1.png) 
+![](PA1_template_files/figure-html/unnamed-chunk-12-1.png) 
